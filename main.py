@@ -2,14 +2,14 @@ import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from google import genai
 from google.genai import types
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Servidor web dummy para mantener vivo el Web Service en Render
+# Servidor web dummy para mantener vivo el servicio en Render
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -32,7 +32,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction
@@ -42,12 +42,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Ocurrió un error: {str(e)}")
 
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Hola! Soy tu asistente personal con Gemini. ¿En qué te puedo ayudar hoy?")
+
 if __name__ == "__main__":
-    # Iniciar servidor HTTP en segundo plano
     threading.Thread(target=run_web_server, daemon=True).start()
 
-    # Iniciar bot de Telegram
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", start_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     print("Bot activo en Telegram...")
     app.run_polling()
