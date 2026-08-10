@@ -9,7 +9,7 @@ from google.genai import types
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Servidor web dummy para mantener vivo el servicio en Render
+# Servidor web para mantener Render activo
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -21,7 +21,7 @@ def run_web_server():
     server = HTTPServer(("0.0.0.0", port), DummyHandler)
     server.serve_forever()
 
-# Lógica del Bot
+# Lógica del Bot de Telegram
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,7 +32,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-1.5-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction
