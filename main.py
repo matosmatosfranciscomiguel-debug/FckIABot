@@ -9,7 +9,7 @@ from google.genai import types
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Servidor web para mantener Render activo
+# Servidor HTTP secundario para Render
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -21,7 +21,6 @@ def run_web_server():
     server = HTTPServer(("0.0.0.0", port), DummyHandler)
     server.serve_forever()
 
-# Lógica del Bot de Telegram
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,7 +31,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction
@@ -40,7 +39,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(response.text)
     except Exception as e:
-        await update.message.reply_text(f"Ocurrió un error: {str(e)}")
+        if "429" in str(e):
+            await update.message.reply_text("La API de Google se encuentra saturada temporalmente. Por favor, intenta de nuevo en unos minutos.")
+        else:
+            await update.message.reply_text(f"Ocurrió un error: {str(e)}")
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¡Hola! Soy tu asistente personal con Gemini. ¿En qué te puedo ayudar hoy?")
